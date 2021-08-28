@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service
 @Service
 class VoiceRecorderBot @Autowired internal constructor(properties: DiscordVoiceRecorderProperties) {
     init {
-        val bot: JDA
-        bot = try {
+        val bot: JDA = try {
             JDABuilder.createDefault(properties.botToken)
                     .setAutoReconnect(true)
                     .build()

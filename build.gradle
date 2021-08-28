@@ -2,56 +2,86 @@ group 'com.bradhenry'
 version '1.1-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'kotlin'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'application'
 apply plugin: 'idea'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 version = '1.1'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 11
 
 repositories {
-    jcenter()
     mavenCentral()
+    maven {
+        name 'm2-dv8tion'
+        url 'https://m2.dv8tion.net/releases'
+    }
 }
 
 buildscript {
+    ext.kotlin_version = '1.5.30'
     ext {
-        springBootVersion = '2.1.2.RELEASE'
+        springBootVersion = '2.5.4'
     }
     repositories {
+        gradlePluginPortal()
         mavenCentral()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '6.1.0'
     }
 }
 
 dependencies {
-    implementation 'net.dv8tion:JDA:3.8.1_437'
-    implementation 'net.bramp.ffmpeg:ffmpeg:0.6.2'
-    implementation 'software.amazon.awssdk:s3:2.4.4'
+    implementation 'net.dv8tion:JDA:4.3.0_310'
+    implementation group: 'com.github.kokorin.jaffree', name: 'jaffree', version: '2021.08.16'
+    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.27'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    implementation 'org.springframework.boot:spring-boot-starter'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    implementation 'org.springframework.boot:spring-boot-starter:2.5.4'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation group: 'com.google.guava', name: 'guava', version: '30.1.1-jre'
+    annotationProcessor group: 'org.springframework.boot', name: 'spring-boot-configuration-processor'
+    implementation group: 'com.sedmelluq', name: 'lavaplayer', version: '1.3.78'
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: '1.5.30'
 }
 
 
 jar {
     enabled = true
     manifest {
-        attributes 'Main-Class': 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplication',
-        'Implementation-Version': version
+        attributes 'Main-Class': 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplicationKt',
+        'Implementation-Version': '1.1'
     }
+    //from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }}
 }
 
 startScripts {
-    mainClassName 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplication'
+    mainClassName 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplicationKt'
 }
 
 application {
-    mainClassName 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplication'
+    mainClassName 'com.bradhenry.discordvoicerecorder.DiscordVoiceRecorderApplicationKt'
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+        useIR = true
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        useIR = true
+        jvmTarget = "11"
+    }
 }
 
+shadowJar {
+    mergeServiceFiles()
+}
