@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.audio.AudioReceiveHandler
 import net.dv8tion.jda.api.audio.CombinedAudio
 import net.dv8tion.jda.api.audio.UserAudio
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.logging.LogFactory
 import java.io.File
 import java.io.FileOutputStream
@@ -58,7 +59,7 @@ class AudioReceiveHandlerImpl(private val properties: DiscordVoiceRecorderProper
                 val absolutePath = file.absolutePath
                 val timestampString = Files.getNameWithoutExtension(absolutePath)
                 val dt = Date(timestampString.toLong())
-                val outputFileName =  event.textChannel.name.replace("[^a-zA-Z0-9]", "") + "-" + df.format(dt)
+                val outputFileName =  event.textChannel.name.replace("[^a-zA-Z0-9]", "") + "-" + df.format(dt) + "-${RandomStringUtils.randomAlphabetic(4)}"
                 val outputPath = Path.of(file.absoluteFile.parent, "${outputFileName}.${properties.recordingFormat}").toAbsolutePath().toString()
                 FFmpeg.atPath().addArgument("-vn").addArguments("-ac", "2").addArguments("-ar", "48000")
                     .addArguments("-f", "s16be").addArguments("-i", "file://$absolutePath")

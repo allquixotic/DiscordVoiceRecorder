@@ -7,6 +7,8 @@ import com.bradhenry.discordvoicerecorder.audiohandlers.AudioReceiveHandlerImpl
 import com.bradhenry.discordvoicerecorder.audiohandlers.TrackScheduler
 import com.bradhenry.discordvoicerecorder.tell
 import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.apache.commons.logging.LogFactory
@@ -23,6 +25,7 @@ class ChatListener private constructor(private val properties: DiscordVoiceRecor
 
     private var isRecording = AtomicBoolean(false)
     private var startEvent: MessageReceivedEvent? = null
+    private var recordingGuild: Guild? = null
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val message = event.message.contentRaw
@@ -53,7 +56,7 @@ class ChatListener private constructor(private val properties: DiscordVoiceRecor
 
 
         executorService.submit {
-            val audioManager = event.member!!.guild.audioManager
+            val audioManager = recordingGuild!!.audioManager
             val receiveHandler = audioManager.receivingHandler
             if (receiveHandler is AudioReceiveHandlerImpl) {
                 receiveHandler.shutdown(event)
@@ -69,7 +72,21 @@ class ChatListener private constructor(private val properties: DiscordVoiceRecor
         if (preventRecording(event) || event.member == null) {
             return
         }
-        if(event.member?.voiceState == null || event.member?.voiceState?.channel == null) {
+        val uid = event.member?.user?.idLong
+        var voiceChannel: VoiceChannel? = null
+        val mg = event.member?.user?.mutualGuilds
+        if(mg != null) {
+            for(it in mg) {
+                val vs = it.getMemberById(uid!!)?.voiceState
+                if(vs != null && vs.channel != null) {
+                    voiceChannel = vs.channel
+                    recordingGuild = voiceChannel!!.guild
+                    break
+                }
+            }
+        }
+
+        if(voiceChannel == null) {
             tell(event, "ERROR: You are not currently in voice.")
             return
         }
@@ -77,8 +94,8 @@ class ChatListener private constructor(private val properties: DiscordVoiceRecor
             tell(event, "ERROR: This bot is already recording somewhere, and only supports recording in one room at a time right now. You'll have wait for the current recording to end. Sorry!")
             return
         }
-        val channel = event.member!!.voiceState!!.channel
-        val audioManager = event.guild.audioManager
+
+        val audioManager = voiceChannel.guild.audioManager
         val recordingFilePath = properties.recordingPath + System.currentTimeMillis() + ".raw"
         val recordingFile = File(recordingFilePath)
         try {
@@ -95,8 +112,8 @@ class ChatListener private constructor(private val properties: DiscordVoiceRecor
             val scheduler = TrackScheduler(audioPlayer)
             audioPlayer.addListener(scheduler)
             audioManager.sendingHandler = scheduler
-            audioManager.openAudioConnection(channel)
-            event.message.reply("Recording started in ${event.member!!.voiceState!!.channel!!.name}.").submit()
+            audioManager.openAudioConnection(voiceChannel)
+            event.message.reply("Recording started in the '${voiceChannel.name}' channel in the '${voiceChannel.guild.name}' server.").submit()
             tracks.values.forEach { scheduler.queue(it.track!!.makeClone()) }
         } catch (e: Exception) {
             LOG.error("Start recording failed", e)

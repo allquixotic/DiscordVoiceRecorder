@@ -50,6 +50,7 @@ dependencies {
     annotationProcessor group: 'org.springframework.boot', name: 'spring-boot-configuration-processor'
     implementation group: 'com.sedmelluq', name: 'lavaplayer', version: '1.3.78'
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: '1.5.30'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 }
 
 
